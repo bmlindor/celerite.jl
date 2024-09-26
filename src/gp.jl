@@ -1,7 +1,7 @@
 # Translating DFM's python version:
 include("terms.jl")
-
-type Celerite
+using LinearAlgebra
+mutable struct Celerite#{T<:Real}
     kernel::Term
     computed::Bool
     D::Vector{Float64}
@@ -310,11 +310,11 @@ function compute_ldlt!(gp::Celerite, x, yerr = 0.0)
   return gp.logdet
 end
 
-function compute!(gp::Celerite, x, yerr = 0.0)
+function compute!(gp::Celerite, x, yerr = 0.0) #where T<: Real
 # Call the choleksy function to decompose & update
 # the components of gp with X,D,V,U,etc. 
   coeffs = get_all_coefficients(gp.kernel)
-  var = yerr.^2 + zeros(Float64, length(x))
+  var = yerr.^2 .+ zeros(Float64, length(x))
   gp.n = length(x)
 #  @time gp.D,gp.W,gp.up,gp.phi = cholesky!(coeffs..., x, var, gp.W, gp.phi, gp.up, gp.D)
   gp.D,gp.W,gp.up,gp.phi = cholesky!(coeffs..., x, var, gp.W, gp.phi, gp.up, gp.D)
@@ -769,7 +769,7 @@ function get_matrix(gp::Celerite, xs...)
     if size(x1, 2) != 1 || size(x2, 2) != 1
         error("Inputs must be 1D")
     end
-
+    # @show length(x1),length(x2)
     tau = broadcast(-, reshape(x1, length(x1), 1), reshape(x2, 1, length(x2)))
     return get_value(gp.kernel, tau)
 end
@@ -787,7 +787,7 @@ function predict_full_ldlt(gp::Celerite, y, t; return_cov=true, return_var=false
     KxsT = transpose(Kxs)
     if return_var
 #        println("Size of y: ",size(y)," size of t: ",size(t)," size of KxsT: ",size(KxsT))
-        v = zeros(t)
+        v = zeros(length(t))
         for i=1:length(t)
           v[i] = -sum(KxsT[:,i] .* apply_inverse_ldlt(gp, KxsT[:,i]))
           if mod(i,100) == 0
@@ -815,12 +815,12 @@ function predict(gp::Celerite, y, t; return_cov=true, return_var=false)
 
     KxsT = transpose(Kxs)
     if return_var
-        v=zeros(t)
+        v=zeros(length(t))
         for i=1:length(t)
 #        v = -sum(KxsT .* apply_inverse(gp, KxsT), 1)
           v[i] = -sum(KxsT[:,i] .* apply_inverse(gp, KxsT[:,i]))
         end
-        v = v + get_value(gp.kernel, [0.0])[1]
+        v = v .+ get_value(gp.kernel, [0.0])[1]
 #        return mu, v[1, :]
         return mu, v
     end
@@ -855,7 +855,7 @@ end
 function _reshape!(A::Array{Float64}, dims...)
 # Allocates arrays if size is not correct
     if size(A) != dims
-        A = Array{Float64}(dims...)
+        A = Array{Float64}(undef,dims...)
     end
     return A
 end

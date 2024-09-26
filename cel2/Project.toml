@@ -1,0 +1,7 @@
+name = "cel2"
+uuid = "d7c4d21e-f632-4ce8-8dec-1f68bf4f0d36"
+authors = ["[bmlindor] <blindor@uw.edu>"]
+version = "0.1.0"
+
+[deps]
+Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
